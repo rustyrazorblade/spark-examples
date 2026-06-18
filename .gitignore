@@ -1,0 +1,6 @@
+.gradle/
+build/
+.cassandra-analytics/
+.DS_Store
+*.iml
+.idea/

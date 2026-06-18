@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The analytics build script is zsh; the runner needs it available.
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
+      # Builds Cassandra Analytics from source (the bulk-writer modules depend on it)
+      # and publishes the artifacts to the local Maven repo. Required before ./gradlew check.
+      - name: Build Cassandra Analytics
+        run: bin/build-cassandra-analytics
+
+      - name: Build and test
+        run: ./gradlew check --no-daemon
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/build/test-results/test/*.xml'
+          if-no-files-found: ignore
