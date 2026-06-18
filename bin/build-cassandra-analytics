@@ -16,8 +16,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 ANALYTICS_DIR="$PROJECT_ROOT/.cassandra-analytics"
 
-# Read defaults from spark/cassandra-analytics-source.properties (committed config)
-CONFIG_FILE="$PROJECT_ROOT/spark/cassandra-analytics-source.properties"
+# Read defaults from cassandra-analytics-source.properties (committed config)
+CONFIG_FILE="$PROJECT_ROOT/cassandra-analytics-source.properties"
 ANALYTICS_REPO="https://github.com/apache/cassandra-analytics.git"
 ANALYTICS_BRANCH="trunk"
 if [ -f "$CONFIG_FILE" ]; then

@@ -37,12 +37,14 @@ jobs:
       - name: Build fat jars
         run: ./gradlew shadowJar --no-daemon
 
-      - name: Collect fat jars
+      - name: Collect job fat jars
+        # Only the runnable job shadow jars — NOT the cassandra-analytics build output
+        # that lands under .cassandra-analytics/**/build/libs/.
         run: |
           mkdir -p release-jars
-          find . -path '*/build/libs/*.jar' \
-            ! -name '*-sources.jar' ! -name '*-javadoc.jar' \
-            -exec cp {} release-jars/ \;
+          for m in bulk-writer-sidecar bulk-writer-s3-iam connector-writer connector-read-write; do
+            cp "$m"/build/libs/*.jar release-jars/
+          done
           ls -la release-jars
 
       - name: Upload jars as artifact
