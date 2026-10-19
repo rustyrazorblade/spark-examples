@@ -16,15 +16,34 @@ val scalaVersion = "2.13"
 val analyticsDir = rootProject.projectDir.resolve(".cassandra-analytics")
 val analyticsPropsFile = analyticsDir.resolve("gradle.properties")
 
+// Cassandra Analytics version: -PcassandraAnalyticsVersion=<v> (artifacts already in ~/.m2),
+// else the version of the clone that bin/build-cassandra-analytics built.
+val NOT_BUILT = "0.0.0-NOT-BUILT"
+val cassandraAnalyticsVersion: String by extra(
+    (findProperty("cassandraAnalyticsVersion") as String?)
+        ?: if (analyticsPropsFile.exists()) {
+            analyticsPropsFile.readLines()
+                .map { it.trim() }
+                .filter { it.startsWith("version=") }
+                .map { it.substringAfter("version=").trim() }
+                .firstOrNull()
+                ?: error("No 'version' property in $analyticsPropsFile")
+        } else {
+            // Placeholder during configuration phase; the task graph check below fails the build.
+            // To build the bulk-writer and bulk-reader modules, run: bin/build-cassandra-analytics
+            NOT_BUILT
+        },
+)
+
 // Fail fast before dependency resolution when cassandra-analytics hasn't been built.
 // Registered once here (not per-subproject) to avoid duplicate errors.
 // doFirst cannot be used because classpath resolution happens before doFirst runs.
 gradle.taskGraph.whenReady {
-    val bulkWriterProjects = subprojects.filter { it.name.startsWith("bulk-writer") }
-    if (!analyticsPropsFile.exists() && allTasks.any { it.project in bulkWriterProjects }) {
+    val bulkWriterProjects = subprojects.filter { it.name.startsWith("bulk-writer") || it.name.startsWith("bulk-reader") }
+    if (cassandraAnalyticsVersion == NOT_BUILT && allTasks.any { it.project in bulkWriterProjects }) {
         throw GradleException(
             "\n\ncassandra-analytics has not been built.\n" +
-                "Run: bin/build-cassandra-analytics\n",
+                "Run: bin/build-cassandra-analytics, or pass -PcassandraAnalyticsVersion=<version>\n",
         )
     }
 }
@@ -66,19 +85,6 @@ subprojects {
 configure(subprojects.filter { it.name.startsWith("bulk-writer") }) {
     apply(plugin = "application")
     apply(plugin = "com.gradleup.shadow")
-
-    val cassandraAnalyticsVersion: String = if (analyticsPropsFile.exists()) {
-        analyticsPropsFile.readLines()
-            .map { it.trim() }
-            .filter { it.startsWith("version=") }
-            .map { it.substringAfter("version=").trim() }
-            .firstOrNull()
-            ?: error("No 'version' property in $analyticsPropsFile")
-    } else {
-        // Placeholder during configuration phase; compileJava will fail with clear deps errors.
-        // To build bulk-writer modules, run: bin/build-cassandra-analytics
-        "0.0.0-NOT-BUILT"
-    }
 
     dependencies {
         "implementation"(project(":common"))

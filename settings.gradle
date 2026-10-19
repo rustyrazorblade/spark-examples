@@ -3,6 +3,7 @@ rootProject.name = 'spark-examples'
 include "common"
 include "bulk-writer-sidecar"
 include "bulk-writer-s3-iam"
+include "bulk-reader-sidecar"
 include "connector-writer"
 include "connector-read-write"
 
